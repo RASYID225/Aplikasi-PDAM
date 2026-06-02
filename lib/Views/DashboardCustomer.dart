@@ -16,9 +16,26 @@ class _DashboardCustomerState extends State<DashboardCustomer> {
   int volumeAir = 0;
   String jatuhTempo = '-';
   bool sudahBayar = false;
-  int tagihaBillId = 0;
+  bool menungguVerifikasi = false;
+  int billId = 0;
   int belumBayarCount = 0;
   List<Map<String, dynamic>> chartData = [];
+
+  static const _bulan = [
+    '',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mei',
+    'Jun',
+    'Jul',
+    'Agt',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des',
+  ];
 
   @override
   void initState() {
@@ -29,7 +46,6 @@ class _DashboardCustomerState extends State<DashboardCustomer> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
-      // Soal 9: GET /bills/me + Soal 3: GET /customers/me
       final results = await Future.wait([
         ApiService.getMyBills(),
         ApiService.getCustomerProfile(),
@@ -38,83 +54,60 @@ class _DashboardCustomerState extends State<DashboardCustomer> {
 
       final billsRes = results[0];
       final profileRes = results[1];
-
-      // Ambil data profil
       final profileData = profileRes['data'] as Map? ?? {};
-      final String nama = profileData['name'] ?? 'Pelanggan';
-      final String custId = profileData['id']?.toString() ?? '';
-
-      // Proses bills
       final List allBills = billsRes['data'] ?? [];
 
-      // Hitung belum bayar
-      final int belumBayar = allBills.where((b) => b['paid'] == false).length;
-
-      // Tagihan terbaru (belum bayar pertama)
-      Map? tagihanTerbaru;
+      Map? latest;
       for (var b in allBills) {
         if (b['paid'] == false) {
-          tagihanTerbaru = b;
+          latest = b;
           break;
         }
       }
 
-      // Buat chart data dari 5 bulan terakhir
-      final List<Map<String, dynamic>> chart = allBills
+      final chart = allBills
           .take(5)
+          .toList()
+          .reversed
           .map<Map<String, dynamic>>((b) {
-            const bulanStr = [
-              '',
-              'JAN',
-              'FEB',
-              'MAR',
-              'APR',
-              'MEI',
-              'JUN',
-              'JUL',
-              'AGT',
-              'SEP',
-              'OKT',
-              'NOV',
-              'DES',
-            ];
             final int m = b['month'] ?? 0;
             return {
-              'bulan': m >= 1 && m <= 12 ? bulanStr[m] : '-',
-              'nilai': b['usage_value'] ?? 0,
-              'isActive': b == allBills.first,
+              'bulan': m >= 1 && m <= 12 ? _bulan[m] : '-',
+              'nilai': (b['usage_value'] ?? 0) as int,
+              'isActive': false,
             };
           })
           .toList();
+      if (chart.isNotEmpty) chart.last['isActive'] = true;
 
       setState(() {
-        namaCustomer = nama;
-        idCustomer = custId;
-        belumBayarCount = belumBayar;
+        namaCustomer = profileData['name'] ?? 'Pelanggan';
+        idCustomer = profileData['id']?.toString() ?? '';
+        belumBayarCount = allBills.where((b) => b['paid'] == false).length;
         chartData = chart;
-
-        if (tagihanTerbaru != null) {
-          totalTagihan = tagihanTerbaru['price'] ?? 0;
-          volumeAir = tagihanTerbaru['usage_value'] ?? 0;
-          tagihaBillId = tagihanTerbaru['id'] ?? 0;
-          sudahBayar = tagihanTerbaru['paid'] ?? false;
-          final int m = tagihanTerbaru['month'] ?? 0;
-          const bStr = [
-            '',
-            'Jan',
-            'Feb',
-            'Mar',
-            'Apr',
-            'Mei',
-            'Jun',
-            'Jul',
-            'Agt',
-            'Sep',
-            'Okt',
-            'Nov',
-            'Des',
-          ];
-          jatuhTempo = m >= 1 && m <= 12 ? '30 ${bStr[m]}' : '-';
+        if (latest != null) {
+          totalTagihan = latest['price'] ?? 0;
+          volumeAir = latest['usage_value'] ?? 0;
+          billId = latest['id'] ?? 0;
+          sudahBayar = false;
+          final payments = latest['payments'];
+          menungguVerifikasi =
+              payments != null &&
+              ((payments is List && payments.isNotEmpty) ||
+                  (payments is Map && payments.isNotEmpty));
+          final int m = latest['month'] ?? 0;
+          jatuhTempo = m >= 1 && m <= 12 ? '30 ${_bulan[m]}' : '-';
+        } else if (allBills.isNotEmpty) {
+          final last = allBills.first;
+          totalTagihan = last['price'] ?? 0;
+          volumeAir = last['usage_value'] ?? 0;
+          billId = 0;
+          sudahBayar = true;
+          menungguVerifikasi = false;
+          final int m = last['month'] ?? 0;
+          jatuhTempo = m >= 1 && m <= 12 ? '30 ${_bulan[m]}' : '-';
+        } else {
+          menungguVerifikasi = false;
         }
         _isLoading = false;
       });
@@ -133,7 +126,7 @@ class _DashboardCustomerState extends State<DashboardCustomer> {
           onRefresh: _loadData,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
             child: _isLoading
                 ? const SizedBox(
                     height: 400,
@@ -146,39 +139,47 @@ class _DashboardCustomerState extends State<DashboardCustomer> {
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header
+                      // ── HEADER ──
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    'Halo, $namaCustomer ',
-                                    style: const TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF1A1A2E),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // ✅ FIX: Expanded + maxLines agar nama panjang tidak overflow
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'Halo, $namaCustomer ',
+                                        maxLines: 1,
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF1A1A2E),
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
-                                  ),
-                                  const Text(
-                                    '👋',
-                                    style: TextStyle(fontSize: 22),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'ID: $idCustomer',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.black54,
+                                    const Text(
+                                      '👋',
+                                      style: TextStyle(fontSize: 20),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 4),
+                                Text(
+                                  'ID: $idCustomer',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.black54,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
@@ -194,7 +195,7 @@ class _DashboardCustomerState extends State<DashboardCustomer> {
                             ),
                             child: const Icon(
                               Icons.notifications_outlined,
-                              size: 22,
+                              size: 20,
                               color: Color(0xFF144B80),
                             ),
                           ),
@@ -202,10 +203,10 @@ class _DashboardCustomerState extends State<DashboardCustomer> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Card Tagihan
+                      // ── CARD TAGIHAN ──
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
@@ -220,74 +221,143 @@ class _DashboardCustomerState extends State<DashboardCustomer> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: sudahBayar
-                                    ? const Color(0xFFE8F5E9)
-                                    : const Color(0xFFFFEBEE),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                sudahBayar ? 'Lunas' : 'Belum Bayar',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: sudahBayar
-                                      ? Colors.green[700]
-                                      : Colors.red[700],
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: sudahBayar
+                                        ? const Color(0xFFE8F5E9)
+                                        : menungguVerifikasi
+                                        ? const Color(0xFFFFF8E1)
+                                        : const Color(0xFFFFEBEE),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    sudahBayar
+                                        ? '✓ Sudah Lunas'
+                                        : menungguVerifikasi
+                                        ? '⏳ Menunggu Verifikasi'
+                                        : 'Belum Bayar',
+                                    maxLines: 1,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: sudahBayar
+                                          ? Colors.green[700]
+                                          : menungguVerifikasi
+                                          ? Colors.orange[700]
+                                          : Colors.red[700],
+                                    ),
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 10),
                             const Text(
                               'Tagihan Bulan Ini',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 13,
                                 color: Colors.black54,
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Rp ${_fmt(totalTagihan)}',
-                              style: const TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1A1A2E),
-                                letterSpacing: -1,
+                            const SizedBox(height: 4),
+                            FittedBox(
+                              alignment: Alignment.centerLeft,
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                'Rp ${_fmt(totalTagihan)}',
+                                style: const TextStyle(
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1A1A2E),
+                                  letterSpacing: -1,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 14),
                             Row(
                               children: [
-                                _tagInfoItem('Volume Air', '$volumeAir m³'),
-                                Container(
-                                  height: 40,
-                                  width: 1,
-                                  color: Colors.grey.shade200,
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 20,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Volume Air',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.black54,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '$volumeAir m³',
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF1A1A2E),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                _tagInfoItem('Jatuh Tempo', jatuhTempo),
+                                Container(
+                                  height: 36,
+                                  width: 1,
+                                  color: Colors.grey.shade200,
+                                ),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(left: 16),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Jatuh Tempo',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.black54,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          jatuhTempo,
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF1A1A2E),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 16),
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                onPressed: !sudahBayar && tagihaBillId > 0
-                                    ? () => Navigator.pushNamed(
-                                        context,
-                                        '/BayarTagihan',
-                                        arguments: {
-                                          'billId': tagihaBillId,
-                                          'total': totalTagihan,
-                                        },
-                                      )
+                                onPressed:
+                                    !sudahBayar &&
+                                        billId > 0 &&
+                                        !menungguVerifikasi
+                                    ? () async {
+                                        await Navigator.pushNamed(
+                                          context,
+                                          '/BayarTagihan',
+                                          arguments: {
+                                            'billId': billId,
+                                            'total': totalTagihan,
+                                          },
+                                        );
+                                        _loadData();
+                                      }
                                     : null,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF144B80),
@@ -300,7 +370,12 @@ class _DashboardCustomerState extends State<DashboardCustomer> {
                                   ),
                                 ),
                                 child: Text(
-                                  sudahBayar ? 'Sudah Lunas' : 'Bayar',
+                                  sudahBayar
+                                      ? '✓ Sudah Lunas'
+                                      : menungguVerifikasi
+                                      ? '⏳ Menunggu Verifikasi Admin'
+                                      : 'Bayar Sekarang',
+                                  maxLines: 1,
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 15,
@@ -312,12 +387,64 @@ class _DashboardCustomerState extends State<DashboardCustomer> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
 
-                      // Chart
+                      // ── NOTIF BELUM BAYAR ──
+                      if (belumBayarCount > 0)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFEBEE),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.warning_amber_rounded,
+                                color: Colors.red,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '$belumBayarCount tagihan belum dibayar',
+                                  maxLines: 1,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pushNamed(
+                                  context,
+                                  '/HistoryCustomer',
+                                ),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: const Text(
+                                  'Lihat',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      // ── CHART ──
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
@@ -335,12 +462,12 @@ class _DashboardCustomerState extends State<DashboardCustomer> {
                             const Text(
                               'Statistik Pemakaian Air',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 15,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF1A1A2E),
                               ),
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 16),
                             chartData.isEmpty
                                 ? const Center(
                                     child: Padding(
@@ -352,9 +479,9 @@ class _DashboardCustomerState extends State<DashboardCustomer> {
                                     ),
                                   )
                                 : _buildBarChart(),
-                            const SizedBox(height: 16),
-                            const Divider(height: 1),
                             const SizedBox(height: 12),
+                            const Divider(height: 1),
+                            const SizedBox(height: 10),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -379,7 +506,7 @@ class _DashboardCustomerState extends State<DashboardCustomer> {
                                   ],
                                 ),
                                 Text(
-                                  'Rata Rata: ${_rataRata()} m³',
+                                  'Rata-rata: ${_rataRata()} m³',
                                   style: const TextStyle(
                                     fontSize: 12,
                                     color: Colors.black54,
@@ -391,47 +518,6 @@ class _DashboardCustomerState extends State<DashboardCustomer> {
                           ],
                         ),
                       ),
-
-                      if (belumBayarCount > 0) ...[
-                        const SizedBox(height: 16),
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFEBEE),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.warning_amber_rounded,
-                                color: Colors.red,
-                                size: 22,
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  'Anda memiliki $belumBayarCount tagihan yang belum dibayar',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.red,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () => Navigator.pushNamed(
-                                  context,
-                                  '/HistoryCustomer',
-                                ),
-                                child: const Text(
-                                  'Lihat',
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -442,91 +528,90 @@ class _DashboardCustomerState extends State<DashboardCustomer> {
   }
 
   Widget _buildBarChart() {
-    final maxVal = chartData
-        .map((e) => e['nilai'] as int)
-        .reduce((a, b) => a > b ? a : b)
-        .toDouble();
+    final vals = chartData.map((e) => e['nilai'] as int).toList();
+    final maxVal = vals.reduce((a, b) => a > b ? a : b).toDouble();
     if (maxVal == 0) return const SizedBox.shrink();
+
+    // ✅ FIX: Bungkus dengan SingleChildScrollView horizontal agar tidak overflow di layar kecil
     return SizedBox(
-      height: 160,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: chartData.map((item) {
-          final isActive = item['isActive'] == true;
-          final nilai = item['nilai'] as int;
-          final barH = (nilai / maxVal) * 120;
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              if (isActive) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF4FC3F7),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    '${nilai}m³',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+      height: 150,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ...chartData.map((item) {
+              final isActive = item['isActive'] == true;
+              final nilai = item['nilai'] as int;
+              final barH = ((nilai / maxVal) * 110).clamp(8.0, 110.0);
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (isActive) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4FC3F7),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: Text(
+                          '${nilai}m³',
+                          maxLines: 1,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                    ],
+                    Container(
+                      width: 28,
+                      height: barH,
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? const Color(0xFF4FC3F7)
+                            : const Color(0xFF144B80),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(5),
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 6),
+                    Text(
+                      item['bulan'],
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: isActive
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: isActive
+                            ? const Color(0xFF144B80)
+                            : Colors.black54,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-              ],
-              Container(
-                width: 32,
-                height: barH.clamp(8.0, 120.0),
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? const Color(0xFF4FC3F7)
-                      : const Color(0xFF144B80),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(6),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                item['bulan'],
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                  color: isActive ? const Color(0xFF144B80) : Colors.black54,
-                ),
-              ),
-            ],
-          );
-        }).toList(),
+              );
+            }).toList(),
+            const SizedBox(width: 6),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _tagInfoItem(String label, String value) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(label, style: const TextStyle(fontSize: 12, color: Colors.black54)),
-      const SizedBox(height: 4),
-      Text(
-        value,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF1A1A2E),
-        ),
-      ),
-    ],
-  );
-
-  String _fmt(int n) {
-    if (n == 0) return '0';
-    final s = n.toString();
+  String _fmt(dynamic n) {
+    final val = (n is int) ? n : int.tryParse(n.toString()) ?? 0;
+    final s = val.toString();
     final b = StringBuffer();
     int c = 0;
     for (int i = s.length - 1; i >= 0; i--) {
@@ -539,7 +624,9 @@ class _DashboardCustomerState extends State<DashboardCustomer> {
 
   String _rataRata() {
     if (chartData.isEmpty) return '0';
-    final t = chartData.map((e) => e['nilai'] as int).reduce((a, b) => a + b);
-    return (t / chartData.length).round().toString();
+    final total = chartData
+        .map((e) => e['nilai'] as int)
+        .reduce((a, b) => a + b);
+    return (total / chartData.length).round().toString();
   }
 }

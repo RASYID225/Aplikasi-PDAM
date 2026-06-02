@@ -102,7 +102,7 @@ class _LoginAdminState extends State<LoginAdmin> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Daftar akun Admin PDAM Anda',
+                            'Login akun Admin PDAM Anda',
                             style: TextStyle(
                               color: Colors.blue[900],
                               fontSize: 15,

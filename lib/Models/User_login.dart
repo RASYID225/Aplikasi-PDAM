@@ -3,22 +3,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 class UserLogin {
   bool? status;
   String? message;
-  String? token;   
-  String? role;    
-  UserLogin({
-    this.status,
-    this.message,
-    this.token,
-    this.role,
-  });
-
+  String? token;
+  String? role;
+  UserLogin({this.status, this.message, this.token, this.role});
 
   Future<void> saveToPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool("login_status", status ?? false);
     await prefs.setString("login_message", message ?? '');
-    await prefs.setString("auth_token", token ?? '');   
-    await prefs.setString("user_role", role ?? '');     
+    await prefs.setString("auth_token", token ?? '');
+    await prefs.setString("user_role", role ?? '');
   }
 
   // Baca data login dari SharedPreferences
@@ -60,5 +54,13 @@ class UserLogin {
     return prefs.getString("user_role") ?? '';
   }
 
-  Future getUserLogin() async {}
+  Future getUserLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    return UserLogin(
+      status: prefs.getBool("login_status"),
+      message: prefs.getString("login_message"),
+      token: prefs.getString("auth_token"),
+      role: prefs.getString("user_role"),
+    );
+  }
 }

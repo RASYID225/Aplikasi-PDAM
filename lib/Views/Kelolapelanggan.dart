@@ -10,8 +10,7 @@ class KelolaPelanggan extends StatefulWidget {
 
 class _KelolaPelangganState extends State<KelolaPelanggan> {
   bool _isLoading = true;
-  List _semua = [];
-  List _filtered = [];
+  List _semua = [], _filtered = [];
   int _total = 0;
   final _search = TextEditingController();
 
@@ -28,17 +27,15 @@ class _KelolaPelangganState extends State<KelolaPelanggan> {
     super.dispose();
   }
 
-  // Soal 5: GET /customers
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     final res = await ApiService.getPelanggan();
     if (!mounted) return;
     final data = List.from(res['data'] ?? []);
-    final int total = res['count'] ?? data.length;
     setState(() {
       _semua = data;
       _filtered = data;
-      _total = total;
+      _total = res['count'] ?? data.length;
       _isLoading = false;
     });
   }
@@ -56,8 +53,7 @@ class _KelolaPelangganState extends State<KelolaPelanggan> {
     });
   }
 
-  // Soal 5: DELETE /customers/{id}
-  Future<void> _delete(int id, String nama) async {
+  Future<void> _hapus(int id, String nama) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -103,16 +99,16 @@ class _KelolaPelangganState extends State<KelolaPelanggan> {
           await Navigator.pushNamed(context, '/TambahPelanggan');
           _loadData();
         },
-        backgroundColor: const Color(0xFF144B80),
+        backgroundColor: const Color(0xFF007BFF),
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: SafeArea(
         child: Column(
           children: [
+            // ── HEADER ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
@@ -131,54 +127,70 @@ class _KelolaPelangganState extends State<KelolaPelanggan> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 14),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Kelola Data Pelanggan',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Kelola Pelanggan',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          Text(
-                            'Total: $_total Pelanggan',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
+                            Text(
+                              'Total: $_total Pelanggan',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 11,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.refresh,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        onPressed: _loadData,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: TextField(
                       controller: _search,
                       decoration: const InputDecoration(
                         hintText: 'Cari nama atau nomor pelanggan',
-                        prefixIcon: Icon(Icons.search, color: Colors.grey),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: Colors.grey,
+                          size: 20,
+                        ),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 14),
+                        contentPadding: EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            // ── LIST ──
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
                 ),
                 child: _isLoading
                     ? const Center(
@@ -186,128 +198,146 @@ class _KelolaPelangganState extends State<KelolaPelanggan> {
                           color: Color(0xFF144B80),
                         ),
                       )
+                    : _filtered.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'Tidak ada data',
+                          style: TextStyle(color: Colors.black54),
+                        ),
+                      )
                     : Column(
                         children: [
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
                                   '${_filtered.length} Pelanggan',
                                   style: const TextStyle(
-                                    fontSize: 16,
+                                    fontSize: 14,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.refresh,
-                                    color: Color(0xFF144B80),
-                                  ),
-                                  onPressed: _loadData,
-                                ),
+                                const Spacer(),
+                                // OK karena Row ini simple, tidak ada text dinamis panjang
                               ],
                             ),
                           ),
                           Expanded(
-                            child: _filtered.isEmpty
-                                ? const Center(
-                                    child: Text(
-                                      'Tidak ada data pelanggan',
-                                      style: TextStyle(color: Colors.black54),
-                                    ),
-                                  )
-                                : ListView.separated(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                    ),
-                                    itemCount: _filtered.length,
-                                    separatorBuilder: (_, __) =>
-                                        const Divider(height: 1, indent: 60),
-                                    itemBuilder: (ctx, i) {
-                                      final p = _filtered[i];
-                                      final nama = p['name'] ?? '-';
-                                      final noP = p['customer_number'] ?? '-';
-                                      final alamat = p['address'] ?? '-';
-                                      return ListTile(
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                              vertical: 8,
-                                              horizontal: 4,
-                                            ),
-                                        leading: CircleAvatar(
-                                          backgroundColor: const Color(
-                                            0xFFE8F0FE,
-                                          ),
-                                          child: Text(
-                                            nama.isNotEmpty
-                                                ? nama[0].toUpperCase()
-                                                : '?',
-                                            style: const TextStyle(
-                                              color: Color(0xFF144B80),
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
+                            child: ListView.separated(
+                              padding: const EdgeInsets.fromLTRB(
+                                16,
+                                0,
+                                16,
+                                100,
+                              ),
+                              itemCount: _filtered.length,
+                              separatorBuilder: (_, __) =>
+                                  const Divider(height: 1),
+                              itemBuilder: (ctx, i) {
+                                final p = _filtered[i];
+                                final String nama = p['name'] ?? '-';
+                                final String noP = p['customer_number'] ?? '-';
+                                final String adr = p['address'] ?? '-';
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 20,
+                                        backgroundColor: const Color(
+                                          0xFFE8F0FE,
                                         ),
-                                        title: Text(
-                                          nama,
+                                        child: Text(
+                                          nama.isNotEmpty
+                                              ? nama[0].toUpperCase()
+                                              : '?',
                                           style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFF144B80),
+                                            fontWeight: FontWeight.bold,
                                             fontSize: 14,
                                           ),
                                         ),
-                                        subtitle: Text(
-                                          'No. $noP • $alamat',
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.black54,
-                                          ),
-                                        ),
-                                        trailing: Row(
-                                          mainAxisSize: MainAxisSize.min,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      // ✅ Expanded mencegah overflow
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
-                                            IconButton(
-                                              icon: const Icon(
-                                                Icons.edit_outlined,
-                                                color: Color(0xFF144B80),
-                                                size: 20,
+                                            Text(
+                                              nama,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 13,
                                               ),
-                                              onPressed: () async {
-                                                await Navigator.pushNamed(
-                                                  ctx,
-                                                  '/TambahPelanggan',
-                                                  arguments: p,
-                                                );
-                                                _loadData();
-                                              },
+                                              overflow: TextOverflow.ellipsis,
                                             ),
-                                            IconButton(
-                                              icon: const Icon(
-                                                Icons.delete_outline,
-                                                color: Colors.red,
-                                                size: 20,
+                                            Text(
+                                              'No.$noP • $adr',
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.black54,
                                               ),
-                                              onPressed: () =>
-                                                  _delete(p['id'], nama),
+                                              overflow: TextOverflow.ellipsis,
                                             ),
                                           ],
                                         ),
-                                      );
-                                    },
+                                      ),
+                                      // ✅ Tombol action compact
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.edit_outlined,
+                                          color: Color(0xFF144B80),
+                                          size: 18,
+                                        ),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(
+                                          minWidth: 32,
+                                          minHeight: 32,
+                                        ),
+                                        onPressed: () async {
+                                          await Navigator.pushNamed(
+                                            ctx,
+                                            '/TambahPelanggan',
+                                            arguments: p,
+                                          );
+                                          _loadData();
+                                        },
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.delete_outline,
+                                          color: Colors.red,
+                                          size: 18,
+                                        ),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(
+                                          minWidth: 32,
+                                          minHeight: 32,
+                                        ),
+                                        onPressed: () => _hapus(p['id'], nama),
+                                      ),
+                                    ],
                                   ),
+                                );
+                              },
+                            ),
                           ),
-                          // Statistik dari API
+                          // ── STAT BOTTOM ──
                           Container(
-                            margin: const EdgeInsets.all(16),
-                            padding: const EdgeInsets.all(16),
+                            margin: const EdgeInsets.all(14),
+                            padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
                                 colors: [Color(0xFF144B80), Color(0xFF007BFF)],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
                               children: [
@@ -324,10 +354,10 @@ class _KelolaPelangganState extends State<KelolaPelanggan> {
                                         ),
                                       ),
                                       Text(
-                                        _total.toString(),
+                                        '$_total',
                                         style: const TextStyle(
                                           color: Colors.white,
-                                          fontSize: 22,
+                                          fontSize: 20,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -340,17 +370,17 @@ class _KelolaPelangganState extends State<KelolaPelanggan> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       const Text(
-                                        'Ditampilkan',
+                                        'Tampil',
                                         style: TextStyle(
                                           color: Colors.white70,
                                           fontSize: 11,
                                         ),
                                       ),
                                       Text(
-                                        _filtered.length.toString(),
+                                        '${_filtered.length}',
                                         style: const TextStyle(
                                           color: Colors.white,
-                                          fontSize: 22,
+                                          fontSize: 20,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),

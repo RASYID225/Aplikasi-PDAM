@@ -65,8 +65,8 @@ class _TambahTagihanState extends State<TambahTagihan> {
         orElse: () => {},
       );
       final svc = cust['service'] as Map? ?? {};
-      final harga = svc['price'] ?? 2000;
-      setState(() => _estimasi = p * 2000);
+      final int harga = (svc['price'] as num? ?? 2000).toInt();
+      setState(() => _estimasi = (p * harga).toInt());
     } else {
       setState(() => _estimasi = p * 2000);
     }

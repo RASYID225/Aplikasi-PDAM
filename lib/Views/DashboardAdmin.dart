@@ -15,6 +15,22 @@ class _DashboardAdminState extends State<DashboardAdmin> {
   int belumDiverifikasi = 0;
   List aktivitasTerbaru = [];
 
+  static const _bulan = [
+    '',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mei',
+    'Jun',
+    'Jul',
+    'Agt',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -24,44 +40,25 @@ class _DashboardAdminState extends State<DashboardAdmin> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
-      // Soal 8: Fetch semua data dashboard secara bersamaan
       final results = await Future.wait([
-        ApiService.getPelanggan(), // index 0
-        ApiService.getLayanan(), // index 1
-        ApiService.getPayments(), // index 2
-        ApiService.getTagihan(), // index 3
+        ApiService.getPelanggan(),
+        ApiService.getLayanan(),
+        ApiService.getPayments(),
+        ApiService.getTagihan(),
       ]);
-
       if (!mounted) return;
-
-      // Total pelanggan dari count
-      final pelangganData = results[0];
-      final int tPelanggan = pelangganData['count'] ?? 0;
-
-      // Total layanan dari count
-      final layananData = results[1];
-      final int tLayanan = layananData['count'] ?? 0;
-
-      // Hitung payment yang belum diverifikasi (verified == false)
-      final paymentData = results[2];
-      final List allPayments = paymentData['data'] ?? [];
-      final int belumVerif = allPayments
-          .where((p) => p['verified'] == false)
-          .length;
-
-      // Aktivitas terbaru dari bills (ambil 3 pertama)
-      final tagihanData = results[3];
-      final List allTagihan = tagihanData['data'] ?? [];
-      final recent = allTagihan.take(3).toList();
-
+      final List allPayments = results[2]['data'] ?? [];
+      final List allTagihan = results[3]['data'] ?? [];
       setState(() {
-        totalPelanggan = tPelanggan;
-        totalLayanan = tLayanan;
-        belumDiverifikasi = belumVerif;
-        aktivitasTerbaru = recent;
+        totalPelanggan = results[0]['count'] ?? 0;
+        totalLayanan = results[1]['count'] ?? 0;
+        belumDiverifikasi = allPayments
+            .where((p) => p['verified'] == false)
+            .length;
+        aktivitasTerbaru = allTagihan.take(3).toList();
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (_) {
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -76,37 +73,46 @@ class _DashboardAdminState extends State<DashboardAdmin> {
           onRefresh: _loadData,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
+                // ── HEADER ──
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              'Halo, Admin ',
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1A1A2E),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  'Halo, Admin ',
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1A1A2E),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
+                              const Text('👋', style: TextStyle(fontSize: 20)),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            'Pantau distribusi air dan kelola data',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.black54,
                             ),
-                            Text('👋', style: TextStyle(fontSize: 22)),
-                          ],
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Pantau distribusi air dan kelola data hari ini',
-                          style: TextStyle(fontSize: 12, color: Colors.black54),
-                        ),
-                      ],
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Stack(
                       children: [
                         Container(
@@ -118,13 +124,12 @@ class _DashboardAdminState extends State<DashboardAdmin> {
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.08),
                                 blurRadius: 8,
-                                offset: const Offset(0, 2),
                               ),
                             ],
                           ),
                           child: const Icon(
                             Icons.notifications_outlined,
-                            size: 22,
+                            size: 20,
                             color: Color(0xFF144B80),
                           ),
                         ),
@@ -132,8 +137,8 @@ class _DashboardAdminState extends State<DashboardAdmin> {
                           right: 6,
                           top: 6,
                           child: Container(
-                            width: 8,
-                            height: 8,
+                            width: 7,
+                            height: 7,
                             decoration: const BoxDecoration(
                               color: Colors.red,
                               shape: BoxShape.circle,
@@ -144,65 +149,64 @@ class _DashboardAdminState extends State<DashboardAdmin> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                // Card Total Pelanggan
+                // ── CARD TOTAL PELANGGAN ──
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF144B80), Color(0xFF007BFF)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
                         color: const Color(0xFF007BFF).withOpacity(0.3),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'TOTAL PELANGGAN',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 11,
-                              letterSpacing: 1.2,
-                              fontWeight: FontWeight.w600,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'TOTAL PELANGGAN',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 10,
+                                letterSpacing: 1,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          _isLoading
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
+                            const SizedBox(height: 6),
+                            _isLoading
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
+                                    '$totalPelanggan',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                )
-                              : Text(
-                                  totalPelanggan.toString(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 36,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: -1,
-                                  ),
-                                ),
-                        ],
+                          ],
+                        ),
                       ),
                       Container(
-                        padding: const EdgeInsets.all(14),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
                           shape: BoxShape.circle,
@@ -210,54 +214,51 @@ class _DashboardAdminState extends State<DashboardAdmin> {
                         child: const Icon(
                           Icons.people_alt_outlined,
                           color: Colors.white,
-                          size: 28,
+                          size: 24,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
-                // Card Layanan & Belum Diverifikasi
+                // ── STAT CARDS ──
                 Row(
                   children: [
                     Expanded(
                       child: _statCard(
-                        icon: Icons.apps_rounded,
-                        iconBg: const Color(0xFFE8F0FE),
-                        iconColor: const Color(0xFF144B80),
-                        label: 'Total Layanan',
-                        value: _isLoading ? '...' : totalLayanan.toString(),
-                        valueColor: const Color(0xFF1A1A2E),
+                        Icons.apps_rounded,
+                        const Color(0xFFE8F0FE),
+                        const Color(0xFF144B80),
+                        'Total Layanan',
+                        _isLoading ? '...' : '$totalLayanan',
+                        const Color(0xFF1A1A2E),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: _statCard(
-                        icon: Icons.access_time_rounded,
-                        iconBg: const Color(0xFFFFF3E0),
-                        iconColor: const Color(0xFFE65100),
-                        label: 'Belum Diverifikasi',
-                        value: _isLoading
-                            ? '...'
-                            : belumDiverifikasi.toString(),
-                        valueColor: const Color(0xFFE65100),
+                        Icons.access_time_rounded,
+                        const Color(0xFFFFF3E0),
+                        const Color(0xFFE65100),
+                        'Belum Verifikasi',
+                        _isLoading ? '...' : '$belumDiverifikasi',
+                        const Color(0xFFE65100),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 18),
 
-                // Aktivitas Terbaru
+                // ── AKTIVITAS TERBARU ──
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
                       'Aktivitas Terbaru',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A1A2E),
                       ),
                     ),
                     TextButton(
@@ -267,19 +268,23 @@ class _DashboardAdminState extends State<DashboardAdmin> {
                         'Lihat Semua',
                         style: TextStyle(
                           color: Color(0xFF007BFF),
-                          fontSize: 13,
+                          fontSize: 12,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 _isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : aktivitasTerbaru.isEmpty
-                    ? const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(20),
+                    ? Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Center(
                           child: Text(
                             'Belum ada tagihan',
                             style: TextStyle(color: Colors.black54),
@@ -289,11 +294,11 @@ class _DashboardAdminState extends State<DashboardAdmin> {
                     : Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.05),
-                              blurRadius: 10,
+                              blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
                           ],
@@ -307,125 +312,149 @@ class _DashboardAdminState extends State<DashboardAdmin> {
                             indent: 16,
                             endIndent: 16,
                           ),
-                          itemBuilder: (context, i) {
+                          itemBuilder: (_, i) {
                             final item = aktivitasTerbaru[i];
-                            final customer = item['customer'] as Map? ?? {};
-                            final isPaid = item['paid'] == true;
-                            final hasPayment =
-                                item['payments'] != null &&
-                                (item['payments'] is Map ||
-                                    (item['payments'] is List &&
-                                        (item['payments'] as List).isNotEmpty));
-                            final String status = isPaid
+                            final cust = item['customer'] as Map? ?? {};
+                            final String nama = cust['name'] ?? '-';
+                            final bool paid = item['paid'] == true;
+                            final payments = item['payments'];
+                            final bool hasPayment =
+                                payments != null &&
+                                ((payments is List &&
+                                        (payments as List).isNotEmpty) ||
+                                    payments is Map);
+                            final String status = paid
                                 ? 'LUNAS'
-                                : (hasPayment ? 'MENUNGGU' : 'BELUM BAYAR');
-                            final Color statusColor = isPaid
+                                : hasPayment
+                                ? 'MENUNGGU'
+                                : 'BELUM BAYAR';
+                            final Color sc = paid
                                 ? Colors.green
-                                : (hasPayment ? Colors.orange : Colors.red);
-                            final Color statusBg = isPaid
+                                : hasPayment
+                                ? Colors.orange
+                                : Colors.red;
+                            final Color sb = paid
                                 ? const Color(0xFFE8F5E9)
-                                : (hasPayment
-                                      ? const Color(0xFFFFF8E1)
-                                      : const Color(0xFFFFEBEE));
-                            final String nama = customer['name'] ?? '-';
-                            return ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
+                                : hasPayment
+                                ? const Color(0xFFFFF8E1)
+                                : const Color(0xFFFFEBEE);
+                            final int m = item['month'] ?? 0;
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
                               ),
-                              leading: CircleAvatar(
-                                backgroundColor: const Color(0xFFE8F0FE),
-                                child: Text(
-                                  nama.isNotEmpty ? nama[0].toUpperCase() : '?',
-                                  style: const TextStyle(
-                                    color: Color(0xFF144B80),
-                                    fontWeight: FontWeight.bold,
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 18,
+                                    backgroundColor: const Color(0xFFE8F0FE),
+                                    child: Text(
+                                      nama.isNotEmpty
+                                          ? nama[0].toUpperCase()
+                                          : '?',
+                                      style: const TextStyle(
+                                        color: Color(0xFF144B80),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
-                              title: Text(
-                                nama,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              subtitle: Text(
-                                'Tagihan #${item['id']} • ${_bulan(item['month'] ?? 0)} ${item['year']}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                              trailing: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: statusBg,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  status,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: statusColor,
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          nama,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        Text(
+                                          'Tagihan #${item['id']} • ${m >= 1 && m <= 12 ? _bulan[m] : '-'}',
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.black54,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: sb,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      status,
+                                      style: TextStyle(
+                                        color: sc,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             );
                           },
                         ),
                       ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 18),
 
-                // Quick Actions
+                // ── QUICK ACTIONS ──
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () =>
                         Navigator.pushNamed(context, '/TambahPelanggan'),
-                    icon: const Icon(Icons.person_add_alt_1_outlined, size: 20),
+                    icon: const Icon(Icons.person_add_alt_1_outlined, size: 18),
                     label: const Text('Tambah Pelanggan Baru'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF144B80),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       textStyle: const TextStyle(
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 Row(
                   children: [
                     Expanded(
                       child: _actionCard(
-                        icon: Icons.bar_chart_rounded,
-                        label: 'Laporan\nBulanan',
-                        onTap: () =>
-                            Navigator.pushNamed(context, '/KelolaTagihan'),
+                        Icons.bar_chart_rounded,
+                        'Laporan\nBulanan',
+                        () => Navigator.pushNamed(context, '/KelolaTagihan'),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: _actionCard(
-                        icon: Icons.tune_rounded,
-                        label: 'Konfigurasi\nTarif',
-                        onTap: () =>
-                            Navigator.pushNamed(context, '/KelolaLayanan'),
+                        Icons.tune_rounded,
+                        'Konfigurasi\nTarif',
+                        () => Navigator.pushNamed(context, '/KelolaLayanan'),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
               ],
             ),
           ),
@@ -434,116 +463,87 @@ class _DashboardAdminState extends State<DashboardAdmin> {
     );
   }
 
-  Widget _statCard({
-    required IconData icon,
-    required Color iconBg,
-    required Color iconColor,
-    required String label,
-    required String value,
-    required Color valueColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: iconBg,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: valueColor,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12, color: Colors.black54),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _actionCard({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
+  Widget _statCard(
+    IconData icon,
+    Color bg,
+    Color ic,
+    String label,
+    String val,
+    Color valColor,
+  ) => Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: Colors.white,
       borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
         ),
-        child: Row(
-          children: [
-            Icon(icon, color: const Color(0xFF144B80), size: 22),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  color: Color(0xFF144B80),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  height: 1.3,
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(7),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: ic, size: 18),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          val,
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.bold,
+            color: valColor,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11, color: Colors.black54),
+        ),
+      ],
+    ),
+  );
+
+  Widget _actionCard(IconData icon, String label, VoidCallback onTap) =>
+      InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade200),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6),
+            ],
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: const Color(0xFF144B80), size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: Color(0xFF144B80),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
-  }
-
-  String _bulan(int m) {
-    const b = [
-      '',
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Agt',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
-    ];
-    return m >= 1 && m <= 12 ? b[m] : '-';
-  }
+      );
 }

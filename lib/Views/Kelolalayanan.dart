@@ -10,8 +10,7 @@ class KelolaLayanan extends StatefulWidget {
 
 class _KelolaLayananState extends State<KelolaLayanan> {
   bool _isLoading = true;
-  List _layanan = [];
-  List _filtered = [];
+  List _layanan = [], _filtered = [];
   final _search = TextEditingController();
 
   @override
@@ -27,7 +26,6 @@ class _KelolaLayananState extends State<KelolaLayanan> {
     super.dispose();
   }
 
-  // Soal 4: GET /services
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     final res = await ApiService.getLayanan();
@@ -49,13 +47,12 @@ class _KelolaLayananState extends State<KelolaLayanan> {
     });
   }
 
-  // Soal 4: DELETE /services/{id}
-  Future<void> _delete(int id, String nama) async {
-    final confirm = await showDialog<bool>(
+  Future<void> _hapus(int id, String nama) async {
+    final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Hapus Layanan'),
-        content: Text('Yakin ingin menghapus "$nama"?'),
+        content: Text('Yakin hapus "$nama"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -69,25 +66,20 @@ class _KelolaLayananState extends State<KelolaLayanan> {
         ],
       ),
     );
-    if (confirm == true) {
+    if (ok == true) {
       final res = await ApiService.deleteLayanan(id);
       if (!mounted) return;
-      if (res['success'] == true) {
-        _loadData();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Layanan dihapus'),
-            backgroundColor: Colors.green,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            res['success'] == true
+                ? 'Layanan dihapus'
+                : res['message'] ?? 'Gagal',
           ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(res['message'] ?? 'Gagal'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+          backgroundColor: res['success'] == true ? Colors.green : Colors.red,
+        ),
+      );
+      if (res['success'] == true) _loadData();
     }
   }
 
@@ -99,16 +91,16 @@ class _KelolaLayananState extends State<KelolaLayanan> {
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           await Navigator.pushNamed(context, '/TambahLayanan');
-          _loadData(); // refresh setelah tambah
+          _loadData();
         },
-        backgroundColor: const Color(0xFF144B80),
+        backgroundColor: const Color(0xFF007BFF),
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: SafeArea(
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
               child: Column(
                 children: [
                   Row(
@@ -128,54 +120,68 @@ class _KelolaLayananState extends State<KelolaLayanan> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 14),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Kelola Layanan',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Kelola Layanan',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          Text(
-                            '${_layanan.length} layanan aktif',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
+                            Text(
+                              '${_layanan.length} layanan terdaftar',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 11,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.refresh,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        onPressed: _loadData,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: TextField(
                       controller: _search,
                       decoration: const InputDecoration(
-                        hintText: 'Cari Layanan',
-                        prefixIcon: Icon(Icons.search, color: Colors.grey),
+                        hintText: 'Cari layanan...',
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: Colors.grey,
+                          size: 20,
+                        ),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 14),
+                        contentPadding: EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
                 ),
                 child: _isLoading
                     ? const Center(
@@ -183,195 +189,157 @@ class _KelolaLayananState extends State<KelolaLayanan> {
                           color: Color(0xFF144B80),
                         ),
                       )
-                    : Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    : _filtered.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'Tidak ada layanan',
+                          style: TextStyle(color: Colors.black54),
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 100),
+                        itemCount: _filtered.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (ctx, i) {
+                          final item = _filtered[i];
+                          final String nama = item['name'] ?? '-';
+                          final int min = item['min_usage'] ?? 0;
+                          final int max = item['max_usage'] ?? 0;
+                          final dynamic harga = item['price'] ?? 0;
+                          return Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade200),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
                               children: [
-                                const Text(
-                                  'Daftar Layanan',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 18,
+                                      backgroundColor: const Color(0xFFE8F0FE),
+                                      child: Icon(
+                                        Icons.water_drop,
+                                        color: Colors.blue.shade700,
+                                        size: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            nama,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            '$min - $max m³',
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.black54,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    // ✅ tombol compact
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.edit_outlined,
+                                        color: Color(0xFF144B80),
+                                        size: 18,
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(
+                                        minWidth: 32,
+                                        minHeight: 32,
+                                      ),
+                                      onPressed: () async {
+                                        await Navigator.pushNamed(
+                                          ctx,
+                                          '/TambahLayanan',
+                                          arguments: item,
+                                        );
+                                        _loadData();
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.delete_outline,
+                                        color: Colors.red,
+                                        size: 18,
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(
+                                        minWidth: 32,
+                                        minHeight: 32,
+                                      ),
+                                      onPressed: () => _hapus(item['id'], nama),
+                                    ),
+                                  ],
                                 ),
-                                OutlinedButton.icon(
-                                  onPressed: _loadData,
-                                  icon: const Icon(Icons.refresh, size: 16),
-                                  label: const Text('Refresh'),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: const Color(0xFF144B80),
-                                    side: const BorderSide(
-                                      color: Color(0xFF144B80),
+                                const Divider(height: 14),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'Pemakaian',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.black54,
+                                            ),
+                                          ),
+                                          Text(
+                                            '$min - $max m³',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end,
+                                        children: [
+                                          const Text(
+                                            'Harga/m³',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.black54,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Rp ${_fmt(harga)}/m³',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF144B80),
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
+                                  ],
                                 ),
                               ],
                             ),
-                          ),
-                          Expanded(
-                            child: _filtered.isEmpty
-                                ? const Center(
-                                    child: Text(
-                                      'Tidak ada layanan',
-                                      style: TextStyle(color: Colors.black54),
-                                    ),
-                                  )
-                                : ListView.separated(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                    ),
-                                    itemCount: _filtered.length,
-                                    separatorBuilder: (_, __) =>
-                                        const SizedBox(height: 12),
-                                    itemBuilder: (context, i) {
-                                      final item = _filtered[i];
-                                      return Container(
-                                        padding: const EdgeInsets.all(16),
-                                        decoration: BoxDecoration(
-                                          border: Border.all(
-                                            color: Colors.grey.shade200,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                CircleAvatar(
-                                                  backgroundColor: const Color(
-                                                    0xFFE8F0FE,
-                                                  ),
-                                                  child: Icon(
-                                                    Icons.water_drop,
-                                                    color: Colors.blue.shade700,
-                                                    size: 18,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 10),
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Text(
-                                                        item['name'] ?? '-',
-                                                        style: const TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          fontSize: 14,
-                                                        ),
-                                                      ),
-                                                      Text(
-                                                        '${item['min_usage']}-${item['max_usage']} m³',
-                                                        style: const TextStyle(
-                                                          fontSize: 11,
-                                                          color: Colors.black54,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                IconButton(
-                                                  icon: const Icon(
-                                                    Icons.edit_outlined,
-                                                    color: Color(0xFF144B80),
-                                                    size: 20,
-                                                  ),
-                                                  onPressed: () =>
-                                                      Navigator.pushNamed(
-                                                        context,
-                                                        '/TambahLayanan',
-                                                        arguments: item,
-                                                      ),
-                                                ),
-                                                IconButton(
-                                                  icon: const Icon(
-                                                    Icons.delete_outline,
-                                                    color: Colors.red,
-                                                    size: 20,
-                                                  ),
-                                                  onPressed: () => _delete(
-                                                    item['id'],
-                                                    item['name'] ?? '',
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const Divider(height: 16),
-                                            Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              children: [
-                                                Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    const Text(
-                                                      'Pemakaian',
-                                                      style: TextStyle(
-                                                        fontSize: 11,
-                                                        color: Colors.black54,
-                                                      ),
-                                                    ),
-                                                    Text(
-                                                      '${item['min_usage']}-${item['max_usage']} m³',
-                                                      style: const TextStyle(
-                                                        fontSize: 13,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.end,
-                                                  children: [
-                                                    const Text(
-                                                      'Harga/m³',
-                                                      style: TextStyle(
-                                                        fontSize: 11,
-                                                        color: Colors.black54,
-                                                      ),
-                                                    ),
-                                                    Text(
-                                                      'Rp ${_fmt(item['price'] ?? 0)}/m³',
-                                                      style: const TextStyle(
-                                                        fontSize: 13,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        color: Color(
-                                                          0xFF144B80,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  ),
-                          ),
-                        ],
+                          );
+                        },
                       ),
               ),
             ),
@@ -382,8 +350,8 @@ class _KelolaLayananState extends State<KelolaLayanan> {
   }
 
   String _fmt(dynamic n) {
-    final val = (n is int) ? n : int.tryParse(n.toString()) ?? 0;
-    final s = val.toString();
+    final v = (n is int) ? n : int.tryParse(n.toString()) ?? 0;
+    final s = v.toString();
     final b = StringBuffer();
     int c = 0;
     for (int i = s.length - 1; i >= 0; i--) {

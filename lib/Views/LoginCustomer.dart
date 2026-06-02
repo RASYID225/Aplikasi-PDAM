@@ -95,7 +95,7 @@ class _LoginCustomerState extends State<LoginCustomer> {
                     'Selamat Datang',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 30,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
                     ),
@@ -103,12 +103,7 @@ class _LoginCustomerState extends State<LoginCustomer> {
                   SizedBox(height: 8),
                   Text(
                     'Masuk ke akun PDAM Anda',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      decoration: TextDecoration.underline,
-                      decorationColor: Colors.white,
-                    ),
+                    style: TextStyle(color: Colors.white, fontSize: 16),
                   ),
                 ],
               ),
@@ -163,8 +158,9 @@ class _LoginCustomerState extends State<LoginCustomer> {
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide:
-                                  BorderSide(color: Colors.grey.shade300),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -209,13 +205,15 @@ class _LoginCustomerState extends State<LoginCustomer> {
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide:
-                                  BorderSide(color: Colors.grey.shade300),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide:
-                                  BorderSide(color: Colors.grey.shade300),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -227,9 +225,11 @@ class _LoginCustomerState extends State<LoginCustomer> {
                             suffixIcon: IconButton(
                               onPressed: () =>
                                   setState(() => showPass = !showPass),
-                              icon: Icon(showPass
-                                  ? Icons.visibility
-                                  : Icons.visibility_off),
+                              icon: Icon(
+                                showPass
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                              ),
                             ),
                           ),
                           validator: (value) {
@@ -268,11 +268,14 @@ class _LoginCustomerState extends State<LoginCustomer> {
                           // ✅ Pakai fungsi _handleLogin
                           onPressed: isLoading ? null : _handleLogin,
                           color: const Color(0xFF144B80),
-                          disabledColor: const Color(0xFF144B80).withOpacity(0.5),
+                          disabledColor: const Color(
+                            0xFF144B80,
+                          ).withOpacity(0.5),
                           minWidth: double.infinity,
                           height: 50,
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                           child: isLoading
                               ? const SizedBox(
                                   width: 24,
@@ -301,8 +304,10 @@ class _LoginCustomerState extends State<LoginCustomer> {
                             child: RichText(
                               text: const TextSpan(
                                 text: 'Belum punya akun? ',
-                                style:
-                                    TextStyle(color: Colors.black87, fontSize: 13),
+                                style: TextStyle(
+                                  color: Colors.black87,
+                                  fontSize: 13,
+                                ),
                                 children: [
                                   TextSpan(
                                     text: 'Hubungi Admin',

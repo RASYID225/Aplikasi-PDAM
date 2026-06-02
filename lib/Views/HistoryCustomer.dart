@@ -14,6 +14,22 @@ class _HistoryCustomerState extends State<HistoryCustomer> {
   List _filtered = [];
   final _search = TextEditingController();
 
+  static const _bulan = [
+    '',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mei',
+    'Jun',
+    'Jul',
+    'Agt',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -27,7 +43,7 @@ class _HistoryCustomerState extends State<HistoryCustomer> {
     super.dispose();
   }
 
-  // Soal 7: GET /bills/me
+  // GET /bills/me
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     final res = await ApiService.getMyBills();
@@ -42,54 +58,25 @@ class _HistoryCustomerState extends State<HistoryCustomer> {
 
   void _onSearch() {
     final q = _search.text.toLowerCase();
-    const b = [
-      '',
-      'jan',
-      'feb',
-      'mar',
-      'apr',
-      'mei',
-      'jun',
-      'jul',
-      'agt',
-      'sep',
-      'okt',
-      'nov',
-      'des',
-    ];
     setState(() {
       _filtered = _semua.where((item) {
         final int m = item['month'] ?? 0;
-        final String periode =
-            '${m >= 1 && m <= 12 ? b[m] : ''} ${item['year'] ?? ''}';
-        return periode.toLowerCase().contains(q);
+        final String s =
+            '${m >= 1 && m <= 12 ? _bulan[m].toLowerCase() : ''} ${item['year'] ?? ''}';
+        return s.contains(q);
       }).toList();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    const bulan = [
-      '',
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Agt',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
-    ];
     return Scaffold(
       backgroundColor: const Color(0xFF144B80),
       bottomNavigationBar: const BottomNav(1),
       body: SafeArea(
         child: Column(
           children: [
+            // ── HEADER ──
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: Column(
@@ -105,8 +92,9 @@ class _HistoryCustomerState extends State<HistoryCustomer> {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'Semua daftar penggunaan air dan status pembayaran',
+                    'Semua tagihan dan status pembayaran Anda',
                     style: TextStyle(color: Colors.white70, fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 14),
                   Row(
@@ -142,7 +130,11 @@ class _HistoryCustomerState extends State<HistoryCustomer> {
                             color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.refresh, color: Colors.white),
+                          child: const Icon(
+                            Icons.refresh,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                         ),
                       ),
                     ],
@@ -150,7 +142,8 @@ class _HistoryCustomerState extends State<HistoryCustomer> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
+            // ── LIST ──
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
@@ -185,18 +178,25 @@ class _HistoryCustomerState extends State<HistoryCustomer> {
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
                         itemCount: _filtered.length,
                         itemBuilder: (ctx, i) {
                           final r = _filtered[i];
                           final bool paid = r['paid'] == true;
+                          final payments = r['payments'];
+                          final bool menunggu = !paid &&
+                              payments != null &&
+                              ((payments is List && payments.isNotEmpty) ||
+                                  (payments is Map && payments.isNotEmpty));
                           final int m = r['month'] ?? 0;
                           final String periode =
-                              '${m >= 1 && m <= 12 ? bulan[m] : '-'} ${r['year'] ?? ''}';
+                              '${m >= 1 && m <= 12 ? _bulan[m] : '-'} ${r['year'] ?? ''}';
+
                           return GestureDetector(
-                            onTap: () {
-                              if (!paid) {
-                                Navigator.pushNamed(
+                            onTap: () async {
+                              // Hanya bisa bayar jika belum bayar DAN belum upload bukti
+                              if (!paid && !menunggu) {
+                                await Navigator.pushNamed(
                                   ctx,
                                   '/BayarTagihan',
                                   arguments: {
@@ -204,6 +204,7 @@ class _HistoryCustomerState extends State<HistoryCustomer> {
                                     'total': r['price'] ?? 0,
                                   },
                                 );
+                                _loadData(); // ✅ Reload setelah bayar
                               }
                             },
                             child: Container(
@@ -223,6 +224,7 @@ class _HistoryCustomerState extends State<HistoryCustomer> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  // ── Baris 1: Periode + Badge ──
                                   Row(
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
@@ -249,23 +251,31 @@ class _HistoryCustomerState extends State<HistoryCustomer> {
                                       ),
                                       Container(
                                         padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
+                                          horizontal: 10,
                                           vertical: 4,
                                         ),
                                         decoration: BoxDecoration(
                                           color: paid
                                               ? const Color(0xFFE8F5E9)
-                                              : const Color(0xFFFFEBEE),
+                                              : menunggu
+                                                  ? const Color(0xFFFFF8E1)
+                                                  : const Color(0xFFFFEBEE),
                                           borderRadius: BorderRadius.circular(
                                             20,
                                           ),
                                         ),
                                         child: Text(
-                                          paid ? 'Lunas' : 'Belum Bayar',
+                                          paid
+                                              ? '✓ Lunas'
+                                              : menunggu
+                                                  ? '⏳ Menunggu'
+                                                  : 'Belum Bayar',
                                           style: TextStyle(
                                             color: paid
                                                 ? Colors.green[700]
-                                                : Colors.red[700],
+                                                : menunggu
+                                                    ? Colors.orange[700]
+                                                    : Colors.red[700],
                                             fontSize: 12,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -273,73 +283,105 @@ class _HistoryCustomerState extends State<HistoryCustomer> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: 10),
                                   const Divider(height: 1),
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: 10),
+                                  // ── Baris 2: Pemakaian + Tagihan ──
+                                  // ✅ FIX: Expanded bukan Row+Spacer bebas
                                   Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const Text(
-                                            'Pemakaian',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.black54,
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'Pemakaian',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.black54,
+                                              ),
                                             ),
-                                          ),
-                                          Text(
-                                            '${r['usage_value'] ?? 0} m³',
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
+                                            Text(
+                                              '${r['usage_value'] ?? 0} m³',
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.end,
-                                        children: [
-                                          const Text(
-                                            'Total Tagihan',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.black54,
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.end,
+                                          children: [
+                                            const Text(
+                                              'Total Tagihan',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.black54,
+                                              ),
                                             ),
-                                          ),
-                                          Text(
-                                            'Rp ${_fmt(r['price'] ?? 0)}',
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.bold,
-                                              color: Color(0xFF144B80),
+                                            Text(
+                                              'Rp ${_fmt(r['price'] ?? 0)}',
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFF144B80),
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
                                     ],
                                   ),
-                                  if (!paid) ...[
+                                  // Hint ketuk untuk bayar (hanya jika belum ada bukti)
+                                  if (!paid && !menunggu) ...[
                                     const SizedBox(height: 10),
                                     Container(
+                                      width: double.infinity,
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
+                                        vertical: 8,
                                       ),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFFE8F4FD),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: const Text(
-                                        'Ketuk untuk membayar',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Color(0xFF144B80),
-                                          fontWeight: FontWeight.w600,
+                                      child: const Center(
+                                        child: Text(
+                                          'Ketuk untuk membayar →',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Color(0xFF144B80),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  // Info menunggu verifikasi
+                                  if (menunggu) ...[
+                                    const SizedBox(height: 10),
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFFF8E1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Center(
+                                        child: Text(
+                                          '⏳ Menunggu verifikasi admin',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.orange,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                         ),
                                       ),
                                     ),
