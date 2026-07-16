@@ -22,7 +22,6 @@ import 'package:pdam_apps/Widgets/Splash_Screen.dart';
 void main() {
   runApp(const MyApp());
 }
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -32,7 +31,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       initialRoute: '/',
       routes: {
-        // Splash
+        // Splash~
         '/':                      (context) => const SplashScreen(),
         // Auth
         '/Register':              (context) => const RegisterView(),

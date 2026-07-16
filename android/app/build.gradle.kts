@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.pdam_apps"
-    compileSdk = 35
+    compileSdk = 35 // Ubah ke 34 jika masih versi lama (misal 33)
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -20,14 +20,11 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.pdam_apps"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        minSdk = 21
+        targetSdk = 35
+        versionCode = 1             // <-- Ubah jadi angka 1
+        versionName = "1.0.0"
     }
 
     buildTypes {

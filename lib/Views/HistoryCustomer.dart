@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pdam_apps/Services/ApiService.dart';
+import 'package:pdam_apps/Services/PdamApiService.dart';
 import 'package:pdam_apps/Widgets/Navbar.dart';
 
 class HistoryCustomer extends StatefulWidget {
@@ -14,21 +14,7 @@ class _HistoryCustomerState extends State<HistoryCustomer> {
   List _filtered = [];
   final _search = TextEditingController();
 
-  static const _bulan = [
-    '',
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'Mei',
-    'Jun',
-    'Jul',
-    'Agt',
-    'Sep',
-    'Okt',
-    'Nov',
-    'Des',
-  ];
+  static const _bulan = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
 
   @override
   void initState() {
@@ -43,7 +29,6 @@ class _HistoryCustomerState extends State<HistoryCustomer> {
     super.dispose();
   }
 
-  // GET /bills/me
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     final res = await ApiService.getMyBills();
@@ -61,8 +46,7 @@ class _HistoryCustomerState extends State<HistoryCustomer> {
     setState(() {
       _filtered = _semua.where((item) {
         final int m = item['month'] ?? 0;
-        final String s =
-            '${m >= 1 && m <= 12 ? _bulan[m].toLowerCase() : ''} ${item['year'] ?? ''}';
+        final String s = '${m >= 1 && m <= 12 ? _bulan[m].toLowerCase() : ''} ${item['year'] ?? ''}';
         return s.contains(q);
       }).toList();
     });
@@ -71,328 +55,93 @@ class _HistoryCustomerState extends State<HistoryCustomer> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF144B80),
+      backgroundColor: const Color(0xFFF4F7FE),
       bottomNavigationBar: const BottomNav(1),
+      appBar: AppBar(
+        title: const Text('Riwayat Tagihan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1A1A2E))),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Color(0xFF1A1A2E)),
+      ),
       body: SafeArea(
         child: Column(
           children: [
-            // ── HEADER ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Riwayat Tagihan',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+                ),
+                child: TextField(
+                  controller: _search,
+                  decoration: const InputDecoration(
+                    hintText: 'Cari bulan atau tahun...',
+                    hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                    prefixIcon: Icon(Icons.search_rounded, color: Colors.grey),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(vertical: 16),
                   ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Semua tagihan dan status pembayaran Anda',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: TextField(
-                            controller: _search,
-                            decoration: const InputDecoration(
-                              hintText: 'Cari bulan atau tahun',
-                              prefixIcon: Icon(
-                                Icons.search,
-                                color: Colors.grey,
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
-                                vertical: 14,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      InkWell(
-                        onTap: _loadData,
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.refresh,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
             ),
-            const SizedBox(height: 14),
-            // ── LIST ──
             Expanded(
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF5F7FA),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                ),
-                child: _isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF144B80),
-                        ),
-                      )
-                    : _filtered.isEmpty
-                    ? const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.receipt_long_outlined,
-                              size: 64,
-                              color: Colors.black26,
-                            ),
-                            SizedBox(height: 16),
-                            Text(
-                              'Belum ada riwayat tagihan',
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: Colors.black45,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-                        itemCount: _filtered.length,
-                        itemBuilder: (ctx, i) {
-                          final r = _filtered[i];
-                          final bool paid = r['paid'] == true;
-                          final payments = r['payments'];
-                          final bool menunggu = !paid &&
-                              payments != null &&
-                              ((payments is List && payments.isNotEmpty) ||
-                                  (payments is Map && payments.isNotEmpty));
-                          final int m = r['month'] ?? 0;
-                          final String periode =
-                              '${m >= 1 && m <= 12 ? _bulan[m] : '-'} ${r['year'] ?? ''}';
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator(color: Color(0xFF4364F7)))
+                  : _filtered.isEmpty
+                      ? const Center(child: Text('Belum ada riwayat tagihan', style: TextStyle(color: Colors.black54)))
+                      : ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
+                          itemCount: _filtered.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 12),
+                          itemBuilder: (ctx, i) {
+                            final r = _filtered[i];
+                            final bool paid = r['paid'] == true;
+                            final payments = r['payments'];
+                            final bool menunggu = !paid && payments != null && ((payments is List && payments.isNotEmpty) || (payments is Map && payments.isNotEmpty));
+                            final int m = r['month'] ?? 0;
+                            final String periode = '${m >= 1 && m <= 12 ? _bulan[m] : '-'} ${r['year'] ?? ''}';
 
-                          return GestureDetector(
-                            onTap: () async {
-                              // Hanya bisa bayar jika belum bayar DAN belum upload bukti
-                              if (!paid && !menunggu) {
-                                await Navigator.pushNamed(
-                                  ctx,
-                                  '/BayarTagihan',
-                                  arguments: {
-                                    'billId': r['id'],
-                                    'total': r['price'] ?? 0,
-                                  },
-                                );
-                                _loadData(); // ✅ Reload setelah bayar
-                              }
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 12),
+                            return Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(14),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
                               ),
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // ── Baris 1: Periode + Badge ──
                                   Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          const Text(
-                                            'Periode',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.black54,
-                                            ),
-                                          ),
-                                          Text(
-                                            periode,
-                                            style: const TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
+                                          const Text('Periode', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                                          Text(periode, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1A1A2E))),
                                         ],
                                       ),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: paid
-                                              ? const Color(0xFFE8F5E9)
-                                              : menunggu
-                                                  ? const Color(0xFFFFF8E1)
-                                                  : const Color(0xFFFFEBEE),
-                                          borderRadius: BorderRadius.circular(
-                                            20,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          paid
-                                              ? '✓ Lunas'
-                                              : menunggu
-                                                  ? '⏳ Menunggu'
-                                                  : 'Belum Bayar',
-                                          style: TextStyle(
-                                            color: paid
-                                                ? Colors.green[700]
-                                                : menunggu
-                                                    ? Colors.orange[700]
-                                                    : Colors.red[700],
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(color: paid ? Colors.green.shade50 : menunggu ? Colors.orange.shade50 : Colors.red.shade50, borderRadius: BorderRadius.circular(8)),
+                                        child: Text(paid ? '✓ Lunas' : menunggu ? '⏳ Menunggu' : 'Belum Bayar', style: TextStyle(color: paid ? Colors.green : menunggu ? Colors.orange : Colors.red, fontSize: 11, fontWeight: FontWeight.bold)),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 10),
-                                  const Divider(height: 1),
-                                  const SizedBox(height: 10),
-                                  // ── Baris 2: Pemakaian + Tagihan ──
-                                  // ✅ FIX: Expanded bukan Row+Spacer bebas
+                                  const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider(height: 1)),
                                   Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            const Text(
-                                              'Pemakaian',
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.black54,
-                                              ),
-                                            ),
-                                            Text(
-                                              '${r['usage_value'] ?? 0} m³',
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.end,
-                                          children: [
-                                            const Text(
-                                              'Total Tagihan',
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.black54,
-                                              ),
-                                            ),
-                                            Text(
-                                              'Rp ${_fmt(r['price'] ?? 0)}',
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.bold,
-                                                color: Color(0xFF144B80),
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
+                                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Pemakaian', style: TextStyle(fontSize: 11, color: Colors.grey)), Text('${r['usage_value'] ?? 0} m³', style: const TextStyle(fontWeight: FontWeight.w600))]),
+                                      Column(crossAxisAlignment: CrossAxisAlignment.end, children: [const Text('Total', style: TextStyle(fontSize: 11, color: Colors.grey)), Text('Rp ${_fmt(r['price'] ?? 0)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0052D4)))]),
                                     ],
                                   ),
-                                  // Hint ketuk untuk bayar (hanya jika belum ada bukti)
-                                  if (!paid && !menunggu) ...[
-                                    const SizedBox(height: 10),
-                                    Container(
-                                      width: double.infinity,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 8,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFE8F4FD),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Center(
-                                        child: Text(
-                                          'Ketuk untuk membayar →',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Color(0xFF144B80),
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                  // Info menunggu verifikasi
-                                  if (menunggu) ...[
-                                    const SizedBox(height: 10),
-                                    Container(
-                                      width: double.infinity,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 8,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFFF8E1),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Center(
-                                        child: Text(
-                                          '⏳ Menunggu verifikasi admin',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.orange,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
                                 ],
                               ),
-                            ),
-                          );
-                        },
-                      ),
-              ),
+                            );
+                          },
+                        ),
             ),
           ],
         ),
@@ -405,11 +154,7 @@ class _HistoryCustomerState extends State<HistoryCustomer> {
     final s = val.toString();
     final b = StringBuffer();
     int c = 0;
-    for (int i = s.length - 1; i >= 0; i--) {
-      if (c > 0 && c % 3 == 0) b.write('.');
-      b.write(s[i]);
-      c++;
-    }
+    for (int i = s.length - 1; i >= 0; i--) { if (c > 0 && c % 3 == 0) b.write('.'); b.write(s[i]); c++; }
     return b.toString().split('').reversed.join();
   }
 }

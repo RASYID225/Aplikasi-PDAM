@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pdam_apps/Services/ApiService.dart';
+import 'package:pdam_apps/Services/PdamApiService.dart';
 
 class TambahPelanggan extends StatefulWidget {
   const TambahPelanggan({super.key});
@@ -51,7 +51,6 @@ class _TambahPelangganState extends State<TambahPelanggan> {
     super.dispose();
   }
 
-  // Ambil daftar layanan untuk dropdown
   Future<void> _loadLayanan() async {
     final res = await ApiService.getLayanan();
     if (!mounted) return;
@@ -76,7 +75,6 @@ class _TambahPelangganState extends State<TambahPelanggan> {
 
     Map<String, dynamic> res;
     if (_editData != null) {
-      // Soal 5: PATCH /customers/{id}
       res = await ApiService.updatePelanggan(_editData!['id'], {
         "name": _nama.text,
         "phone": _phone.text,
@@ -85,7 +83,6 @@ class _TambahPelangganState extends State<TambahPelanggan> {
         "service_id": _serviceId,
       });
     } else {
-      // Soal 5: POST /customers
       res = await ApiService.createPelanggan({
         "username": _username.text,
         "password": _password.text,
@@ -126,273 +123,232 @@ class _TambahPelangganState extends State<TambahPelanggan> {
   Widget build(BuildContext context) {
     final isEdit = _editData != null;
     return Scaffold(
-      backgroundColor: const Color(0xFF144B80),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: Row(
-                children: [
-                  InkWell(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                        size: 20,
-                      ),
+      backgroundColor: const Color(0xFFF4F7FE),
+      appBar: AppBar(
+        title: Text(
+          isEdit ? 'Edit Pelanggan' : 'Pelanggan Baru',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: Color(0xFF1A1A2E),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Color(0xFF1A1A2E)),
+      ),
+      body: _loadingLayanan
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF4364F7)),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
-                  ),
-                  const SizedBox(width: 14),
-                  Column(
+                  ],
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        isEdit ? 'Edit Pelanggan' : 'Data Pelanggan Baru',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      _label('Nama Lengkap'),
+                      _field(
+                        _nama,
+                        'Masukkan Nama Lengkap',
+                        Icons.person_outline,
                       ),
-                      const Text(
-                        'Lengkapi formulir data pelanggan',
-                        style: TextStyle(color: Colors.white70, fontSize: 11),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                ),
-                child: _loadingLayanan
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF144B80),
+                      if (!isEdit) ...[
+                        const SizedBox(height: 16),
+                        _label('Username'),
+                        _field(
+                          _username,
+                          'Username login',
+                          Icons.alternate_email,
                         ),
-                      )
-                    : SingleChildScrollView(
-                        padding: const EdgeInsets.all(24),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _label('Nama Lengkap'),
-                              _field(_nama, 'Masukkan Nama Lengkap'),
-                              if (!isEdit) ...[
-                                const SizedBox(height: 16),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          _label('Username'),
-                                          _field(_username, 'Username login'),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          _label('Password'),
-                                          TextFormField(
-                                            controller: _password,
-                                            obscureText: _obscure,
-                                            decoration: InputDecoration(
-                                              hintText: '••••••',
-                                              suffixIcon: IconButton(
-                                                icon: Icon(
-                                                  _obscure
-                                                      ? Icons.visibility
-                                                      : Icons.visibility_off,
-                                                  size: 18,
-                                                ),
-                                                onPressed: () => setState(
-                                                  () => _obscure = !_obscure,
-                                                ),
-                                              ),
-                                              border: OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                              ),
-                                              contentPadding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 14,
-                                                    vertical: 14,
-                                                  ),
-                                            ),
-                                            validator: (v) =>
-                                                (v == null || v.isEmpty)
-                                                ? 'Wajib'
-                                                : null,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                              const SizedBox(height: 16),
-                              _label('Nomor Pelanggan'),
-                              _field(
-                                _noCustomer,
-                                'Contoh: PLG-001',
-                                type: TextInputType.number,
+                        const SizedBox(height: 16),
+                        _label('Password'),
+                        TextFormField(
+                          controller: _password,
+                          obscureText: _obscure,
+                          decoration: InputDecoration(
+                            hintText: '••••••',
+                            prefixIcon: const Icon(
+                              Icons.lock_outline,
+                              color: Color(0xFF4364F7),
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscure
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                                color: Colors.grey,
                               ),
-                              const SizedBox(height: 16),
-                              _label('Nomor Telepon'),
-                              _field(
-                                _phone,
-                                '+62 812-3456-7890',
-                                type: TextInputType.phone,
+                              onPressed: () =>
+                                  setState(() => _obscure = !_obscure),
+                            ),
+                            filled: true,
+                            fillColor: const Color(0xFFF8FAFC),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          validator: (v) =>
+                              (v == null || v.isEmpty) ? 'Wajib' : null,
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      _label('Nomor Pelanggan'),
+                      _field(
+                        _noCustomer,
+                        'Contoh: PLG-001',
+                        Icons.badge_outlined,
+                        type: TextInputType.text,
+                      ),
+                      const SizedBox(height: 16),
+                      _label('Nomor Telepon'),
+                      _field(
+                        _phone,
+                        '+62 812-3456-7890',
+                        Icons.phone_outlined,
+                        type: TextInputType.phone,
+                      ),
+                      const SizedBox(height: 16),
+                      _label('Pilih Layanan'),
+                      DropdownButtonFormField<int>(
+                        value: _serviceId,
+                        hint: const Text(
+                          'Pilih kategori layanan',
+                          style: TextStyle(color: Colors.black38),
+                        ),
+                        items: _layananList
+                            .map<DropdownMenuItem<int>>(
+                              (l) => DropdownMenuItem<int>(
+                                value: l['id'] as int,
+                                child: Text(l['name'] ?? '-'),
                               ),
-                              const SizedBox(height: 16),
-                              _label('Pilih Layanan'),
-                              DropdownButtonFormField<int>(
-                                value: _serviceId,
-                                hint: const Text(
-                                  'Pilih kategori layanan',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.black38,
-                                  ),
-                                ),
-                                items: _layananList
-                                    .map<DropdownMenuItem<int>>(
-                                      (l) => DropdownMenuItem<int>(
-                                        value: l['id'] as int,
-                                        child: Text(l['name'] ?? '-'),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (v) =>
-                                    setState(() => _serviceId = v),
-                                decoration: InputDecoration(
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 14,
-                                  ),
-                                ),
-                                validator: (v) =>
-                                    v == null ? 'Pilih layanan' : null,
-                              ),
-                              const SizedBox(height: 16),
-                              _label('Alamat'),
-                              TextFormField(
-                                controller: _alamat,
-                                maxLines: 3,
-                                decoration: InputDecoration(
-                                  hintText:
-                                      'Masukkan alamat lengkap sesuai KTP',
-                                  hintStyle: const TextStyle(
-                                    color: Colors.black38,
-                                    fontSize: 13,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 14,
+                            )
+                            .toList(),
+                        onChanged: (v) => setState(() => _serviceId = v),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          prefixIcon: const Icon(
+                            Icons.water_drop_outlined,
+                            color: Color(0xFF4364F7),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        validator: (v) => v == null ? 'Pilih layanan' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      _label('Alamat Lengkap'),
+                      TextFormField(
+                        controller: _alamat,
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          hintText: 'Masukkan alamat lengkap sesuai KTP',
+                          hintStyle: const TextStyle(color: Colors.black38),
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        validator: (v) =>
+                            (v == null || v.isEmpty) ? 'Wajib diisi' : null,
+                      ),
+                      const SizedBox(height: 32),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 55,
+                        child: ElevatedButton.icon(
+                          onPressed: _isLoading ? null : _submit,
+                          icon: Icon(
+                            isEdit
+                                ? Icons.save_outlined
+                                : Icons.person_add_outlined,
+                            color: Colors.white,
+                          ),
+                          label: _isLoading
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
+                              : Text(
+                                  isEdit
+                                      ? 'Simpan Perubahan'
+                                      : 'Tambah Pelanggan',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
                                   ),
                                 ),
-                                validator: (v) => (v == null || v.isEmpty)
-                                    ? 'Wajib diisi'
-                                    : null,
-                              ),
-                              const SizedBox(height: 28),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton.icon(
-                                  onPressed: _isLoading ? null : _submit,
-                                  icon: Icon(
-                                    isEdit
-                                        ? Icons.save_outlined
-                                        : Icons.person_add_outlined,
-                                  ),
-                                  label: _isLoading
-                                      ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            color: Colors.white,
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                      : Text(
-                                          isEdit
-                                              ? 'Simpan Perubahan'
-                                              : 'Tambah Pelanggan',
-                                        ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF144B80),
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    textStyle: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4364F7),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 5,
+                            shadowColor: const Color(
+                              0xFF4364F7,
+                            ).withOpacity(0.5),
                           ),
                         ),
                       ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ],
-        ),
-      ),
     );
   }
 
   Widget _label(String t) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
+    padding: const EdgeInsets.only(bottom: 8, top: 4),
     child: Text(
       t,
-      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: Color(0xFF1A1A2E),
+      ),
     ),
   );
-  Widget _field(TextEditingController c, String h, {TextInputType? type}) =>
-      TextFormField(
-        controller: c,
-        keyboardType: type,
-        decoration: InputDecoration(
-          hintText: h,
-          hintStyle: const TextStyle(color: Colors.black38, fontSize: 13),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 14,
-          ),
-        ),
-        validator: (v) => (v == null || v.isEmpty) ? 'Wajib diisi' : null,
-      );
+
+  Widget _field(
+    TextEditingController c,
+    String h,
+    IconData icon, {
+    TextInputType? type,
+  }) => TextFormField(
+    controller: c,
+    keyboardType: type,
+    decoration: InputDecoration(
+      hintText: h,
+      hintStyle: const TextStyle(color: Colors.black38),
+      prefixIcon: Icon(icon, color: const Color(0xFF4364F7)),
+      filled: true,
+      fillColor: const Color(0xFFF8FAFC),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+    ),
+    validator: (v) => (v == null || v.isEmpty) ? 'Wajib diisi' : null,
+  );
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pdam_apps/Models/User_login.dart';
-import 'package:pdam_apps/Services/ApiService.dart';
+import 'package:pdam_apps/Services/PdamApiService.dart';
 import 'package:pdam_apps/Widgets/Navbar.dart';
 
 class ProfileCustomer extends StatefulWidget {
@@ -24,7 +24,6 @@ class _ProfileCustomerState extends State<ProfileCustomer> {
     _loadProfile();
   }
 
-  // Soal 3: GET /customers/me
   Future<void> _loadProfile() async {
     setState(() => _isLoading = true);
     final res = await ApiService.getCustomerProfile();
@@ -52,182 +51,149 @@ class _ProfileCustomerState extends State<ProfileCustomer> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF4F7FE),
       bottomNavigationBar: const BottomNav(2),
-      body: SafeArea(
-        child: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: Color(0xFF144B80)),
-              )
-            : SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 20,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 20),
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: const Color(0xFFE0F2FE),
-                      child: Text(
-                        nama.isNotEmpty ? nama[0].toUpperCase() : 'P',
-                        style: const TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF0369A1),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF4364F7)))
+          : SingleChildScrollView(
+              child: Column(
+                children: [
+                  // --- HEADER GRADIENT & AVATAR ---
+                  Stack(
+                    alignment: Alignment.bottomCenter,
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        height: 220,
+                        width: double.infinity,
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xFF0052D4), Color(0xFF4364F7)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(40),
+                            bottomRight: Radius.circular(40),
+                          ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      nama.isNotEmpty ? nama : 'Pelanggan',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'No. Pelanggan: $customerNumber',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.black54,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.teal.shade50,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        layanan.isNotEmpty ? layanan : 'Pelanggan PDAM',
-                        style: TextStyle(
-                          color: Colors.teal.shade700,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Informasi Akun',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black54,
+                        child: const SafeArea(
+                          child: Align(
+                            alignment: Alignment.topCenter,
+                            child: Padding(
+                              padding: EdgeInsets.only(top: 16.0),
+                              child: Text('Profil Saya', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                             ),
                           ),
-                          const SizedBox(height: 20),
-                          _infoRow(
-                            'Nama',
-                            nama.isNotEmpty ? nama : '-',
-                            Icons.person_outline,
-                          ),
-                          const Divider(height: 24),
-                          _infoRow(
-                            'Username',
-                            username.isNotEmpty ? username : '-',
-                            Icons.alternate_email,
-                          ),
-                          const Divider(height: 24),
-                          _infoRow(
-                            'Telepon',
-                            phone.isNotEmpty ? phone : '-',
-                            Icons.phone_outlined,
-                          ),
-                          const Divider(height: 24),
-                          _infoRow(
-                            'Alamat',
-                            alamat.isNotEmpty ? alamat : '-',
-                            Icons.location_on_outlined,
-                          ),
-                        ],
+                        ),
                       ),
+                      Positioned(
+                        bottom: -50,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(color: Color(0xFFF4F7FE), shape: BoxShape.circle),
+                          child: CircleAvatar(
+                            radius: 54,
+                            backgroundColor: Colors.white,
+                            child: Text(
+                              nama.isNotEmpty ? nama[0].toUpperCase() : 'P',
+                              style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Color(0xFF0052D4)),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 60),
+
+                  // --- NAMA & ROLE ---
+                  Text(nama.isNotEmpty ? nama : 'Pelanggan', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1A1A2E))),
+                  const SizedBox(height: 4),
+                  Text('No. Pelanggan: $customerNumber', style: const TextStyle(fontSize: 14, color: Colors.black54)),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    decoration: BoxDecoration(color: const Color(0xFF4364F7).withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                    child: Text(layanan.isNotEmpty ? layanan : 'Pelanggan PDAM', style: const TextStyle(color: Color(0xFF4364F7), fontWeight: FontWeight.bold, fontSize: 13)),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // --- KARTU INFORMASI ---
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
                     ),
-                    const SizedBox(height: 24),
-                    SizedBox(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Informasi Akun', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A1A2E))),
+                        const SizedBox(height: 20),
+                        _infoRow('Nama Lengkap', nama.isNotEmpty ? nama : '-', Icons.person_outline),
+                        const Divider(height: 30, color: Color(0xFFF4F7FE), thickness: 1.5),
+                        _infoRow('Username', username.isNotEmpty ? username : '-', Icons.alternate_email),
+                        const Divider(height: 30, color: Color(0xFFF4F7FE), thickness: 1.5),
+                        _infoRow('Telepon', phone.isNotEmpty ? phone : '-', Icons.phone_outlined),
+                        const Divider(height: 30, color: Color(0xFFF4F7FE), thickness: 1.5),
+                        _infoRow('Alamat', alamat.isNotEmpty ? alamat : '-', Icons.location_on_outlined),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // --- BUTTONS ---
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
                         onPressed: () {},
                         icon: const Icon(Icons.edit_outlined, size: 18),
                         label: const Text('Edit Profil'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF144B80),
-                          side: const BorderSide(color: Color(0xFF144B80)),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                          foregroundColor: const Color(0xFF4364F7),
+                          side: const BorderSide(color: Color(0xFF4364F7), width: 1.5),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          textStyle: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: _handleLogout,
-                      child: const Text(
-                        'Keluar',
-                        style: TextStyle(
-                          color: Colors.red,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton.icon(
+                    onPressed: _handleLogout,
+                    icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+                    label: const Text('Keluar dari Akun', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 15)),
+                  ),
+                  const SizedBox(height: 40),
+                ],
               ),
-      ),
+            ),
     );
   }
 
   Widget _infoRow(String label, String value, IconData icon) => Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
     children: [
+      Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(color: const Color(0xFFF4F7FE), borderRadius: BorderRadius.circular(12)),
+        child: Icon(icon, color: const Color(0xFF0052D4), size: 20),
+      ),
+      const SizedBox(width: 16),
       Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500)),
             const SizedBox(height: 4),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.black87,
-                fontWeight: FontWeight.w600,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
+            Text(value, style: const TextStyle(fontSize: 15, color: Color(0xFF1A1A2E), fontWeight: FontWeight.bold)),
           ],
         ),
       ),
-      const SizedBox(width: 8),
-      Icon(icon, color: Colors.grey.shade500, size: 20),
     ],
   );
 }

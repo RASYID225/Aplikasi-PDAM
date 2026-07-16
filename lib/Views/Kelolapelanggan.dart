@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pdam_apps/Services/ApiService.dart';
+import 'package:pdam_apps/Services/PdamApiService.dart';
 import 'package:pdam_apps/Widgets/Navbar.dart';
 
 class KelolaPelanggan extends StatefulWidget {
@@ -57,17 +57,18 @@ class _KelolaPelangganState extends State<KelolaPelanggan> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Hapus Pelanggan'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Hapus Pelanggan', style: TextStyle(fontWeight: FontWeight.bold)),
         content: Text('Yakin hapus "$nama"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
+            child: const Text('Batal', style: TextStyle(color: Colors.grey)),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Hapus'),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            child: const Text('Hapus', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -78,9 +79,7 @@ class _KelolaPelangganState extends State<KelolaPelanggan> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            res['success'] == true
-                ? 'Pelanggan dihapus'
-                : res['message'] ?? 'Gagal',
+            res['success'] == true ? 'Pelanggan dihapus' : res['message'] ?? 'Gagal',
           ),
           backgroundColor: res['success'] == true ? Colors.green : Colors.red,
         ),
@@ -92,307 +91,158 @@ class _KelolaPelangganState extends State<KelolaPelanggan> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF144B80),
+      backgroundColor: const Color(0xFFF4F7FE),
       bottomNavigationBar: const BottomNav(1),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           await Navigator.pushNamed(context, '/TambahPelanggan');
           _loadData();
         },
-        backgroundColor: const Color(0xFF007BFF),
+        backgroundColor: const Color(0xFF4364F7),
+        elevation: 4,
         child: const Icon(Icons.add, color: Colors.white),
+      ),
+      appBar: AppBar(
+        title: const Text('Kelola Pelanggan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1A1A2E))),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Color(0xFF1A1A2E)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF4364F7)),
+            onPressed: _loadData,
+          ),
+        ],
       ),
       body: SafeArea(
         child: Column(
           children: [
-            // ── HEADER ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: Column(
                 children: [
-                  Row(
-                    children: [
-                      InkWell(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            Icons.arrow_back,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
+                  // --- STAT CARD ---
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF0052D4), Color(0xFF4364F7)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [BoxShadow(color: const Color(0xFF4364F7).withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8))],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+                          child: const Icon(Icons.people_alt_rounded, color: Colors.white, size: 28),
+                        ),
+                        const SizedBox(width: 16),
+                        Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Kelola Pelanggan',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              'Total: $_total Pelanggan',
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 11,
-                              ),
-                            ),
+                            const Text('TOTAL PELANGGAN AKTIF', style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 0.5, fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 4),
+                            Text('$_total', style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
                           ],
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.refresh,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        onPressed: _loadData,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
+                  
+                  // --- SEARCH BAR ---
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
                     ),
                     child: TextField(
                       controller: _search,
                       decoration: const InputDecoration(
-                        hintText: 'Cari nama atau nomor pelanggan',
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: Colors.grey,
-                          size: 20,
-                        ),
+                        hintText: 'Cari nama atau no pelanggan...',
+                        hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                        prefixIcon: Icon(Icons.search_rounded, color: Colors.grey),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 12),
+                        contentPadding: EdgeInsets.symmetric(vertical: 16),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            // ── LIST ──
+            
+            // --- LIST PELANGGAN ---
             Expanded(
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-                ),
-                child: _isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF144B80),
-                        ),
-                      )
-                    : _filtered.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'Tidak ada data',
-                          style: TextStyle(color: Colors.black54),
-                        ),
-                      )
-                    : Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-                            child: Row(
-                              children: [
-                                Text(
-                                  '${_filtered.length} Pelanggan',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const Spacer(),
-                                // OK karena Row ini simple, tidak ada text dinamis panjang
-                              ],
-                            ),
-                          ),
-                          Expanded(
-                            child: ListView.separated(
-                              padding: const EdgeInsets.fromLTRB(
-                                16,
-                                0,
-                                16,
-                                100,
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator(color: Color(0xFF4364F7)))
+                  : _filtered.isEmpty
+                      ? const Center(child: Text('Tidak ada data pelanggan', style: TextStyle(color: Colors.black54)))
+                      : ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
+                          itemCount: _filtered.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 12),
+                          itemBuilder: (ctx, i) {
+                            final p = _filtered[i];
+                            final String nama = p['name'] ?? '-';
+                            final String noP = p['customer_number'] ?? '-';
+                            final String adr = p['address'] ?? '-';
+                            
+                            return Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
                               ),
-                              itemCount: _filtered.length,
-                              separatorBuilder: (_, __) =>
-                                  const Divider(height: 1),
-                              itemBuilder: (ctx, i) {
-                                final p = _filtered[i];
-                                final String nama = p['name'] ?? '-';
-                                final String noP = p['customer_number'] ?? '-';
-                                final String adr = p['address'] ?? '-';
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 8,
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 22,
+                                    backgroundColor: Colors.blue.shade50,
+                                    child: Text(
+                                      nama.isNotEmpty ? nama[0].toUpperCase() : '?',
+                                      style: const TextStyle(color: Color(0xFF0052D4), fontWeight: FontWeight.bold, fontSize: 16),
+                                    ),
                                   ),
-                                  child: Row(
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(nama, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1A1A2E)), overflow: TextOverflow.ellipsis),
+                                        const SizedBox(height: 4),
+                                        Text('No. $noP', style: const TextStyle(fontSize: 12, color: Color(0xFF4364F7), fontWeight: FontWeight.w600)),
+                                        const SizedBox(height: 2),
+                                        Text(adr, style: TextStyle(fontSize: 11, color: Colors.grey.shade600), overflow: TextOverflow.ellipsis, maxLines: 1),
+                                      ],
+                                    ),
+                                  ),
+                                  Row(
                                     children: [
-                                      CircleAvatar(
-                                        radius: 20,
-                                        backgroundColor: const Color(
-                                          0xFFE8F0FE,
-                                        ),
-                                        child: Text(
-                                          nama.isNotEmpty
-                                              ? nama[0].toUpperCase()
-                                              : '?',
-                                          style: const TextStyle(
-                                            color: Color(0xFF144B80),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      // ✅ Expanded mencegah overflow
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              nama,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 13,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            Text(
-                                              'No.$noP • $adr',
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.black54,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      // ✅ Tombol action compact
                                       IconButton(
-                                        icon: const Icon(
-                                          Icons.edit_outlined,
-                                          color: Color(0xFF144B80),
-                                          size: 18,
-                                        ),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(
-                                          minWidth: 32,
-                                          minHeight: 32,
-                                        ),
+                                        icon: const Icon(Icons.edit_rounded, color: Color(0xFF0052D4), size: 20),
                                         onPressed: () async {
-                                          await Navigator.pushNamed(
-                                            ctx,
-                                            '/TambahPelanggan',
-                                            arguments: p,
-                                          );
+                                          await Navigator.pushNamed(ctx, '/TambahPelanggan', arguments: p);
                                           _loadData();
                                         },
                                       ),
                                       IconButton(
-                                        icon: const Icon(
-                                          Icons.delete_outline,
-                                          color: Colors.red,
-                                          size: 18,
-                                        ),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(
-                                          minWidth: 32,
-                                          minHeight: 32,
-                                        ),
+                                        icon: const Icon(Icons.delete_rounded, color: Colors.redAccent, size: 20),
                                         onPressed: () => _hapus(p['id'], nama),
                                       ),
                                     ],
                                   ),
-                                );
-                              },
-                            ),
-                          ),
-                          // ── STAT BOTTOM ──
-                          Container(
-                            margin: const EdgeInsets.all(14),
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF144B80), Color(0xFF007BFF)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
+                                ],
                               ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Total',
-                                        style: TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                      Text(
-                                        '$_total',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Tampil',
-                                        style: TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                      Text(
-                                        '${_filtered.length}',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-              ),
+                            );
+                          },
+                        ),
             ),
           ],
         ),
